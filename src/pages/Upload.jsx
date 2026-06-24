@@ -33,7 +33,12 @@ export default function Upload() {
 
       setProgress('Processing data...');
       const processed = processData(rows);
-      saveData(processed, file.name, rows.length);
+      const saved = saveData(processed, file.name, rows.length);
+      if (!saved) {
+        setStatus('error');
+        setError('File is too large to process in the browser (sessionStorage quota exceeded). Try a smaller file.');
+        return;
+      }
       setStatus('success');
       setProgress('Done!');
       setTimeout(() => navigate('/dashboard'), 500);

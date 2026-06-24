@@ -25,23 +25,31 @@ export function validateColumns(rows) {
   return { valid: missing.length === 0, missing };
 }
 
+const KEEP_COLS = ['Serial Number', 'Абонент', 'OLT', 'PON Port', 'Модель'];
+
+function slimRow(row) {
+  const out = {};
+  for (const k of KEEP_COLS) out[k] = row[k] ?? '';
+  return out;
+}
+
 export function processData(rows) {
   const normalized = rows.map(normalizeRow);
 
-  const active = normalized.filter(r => r['Модель'] && String(r['Модель']).trim() !== '');
-  const inactive = normalized.filter(r => !r['Модель'] || String(r['Модель']).trim() === '');
+  const isActive = r => r['Модель'] && String(r['Модель']).trim() !== '';
+  const inactive = normalized.filter(r => !isActive(r)).map(slimRow);
 
   // duplicates by serial
   const serialGroups = groupBy(normalized, 'Serial Number');
   const dupSerials = Object.entries(serialGroups)
     .filter(([k, v]) => k && String(k).trim() && v.length > 1)
-    .flatMap(([, v]) => v);
+    .flatMap(([, v]) => v.map(slimRow));
 
   // duplicates by subscriber
   const subGroups = groupBy(normalized, 'Абонент');
   const dupSubscribers = Object.entries(subGroups)
     .filter(([k, v]) => k && String(k).trim() && v.length > 1)
-    .flatMap(([, v]) => v);
+    .flatMap(([, v]) => v.map(slimRow));
 
   // port stats
   const portGroups = groupBy(normalized, r => `${r['OLT']}|||${r['PON Port']}`);
@@ -57,7 +65,7 @@ export function processData(rows) {
   const oltGroups = groupBy(normalized, 'OLT');
   const olts = Object.entries(oltGroups).map(([olt, items]) => {
     const total = items.length;
-    const activeCount = items.filter(r => r['Модель'] && String(r['Модель']).trim()).length;
+    const activeCount = items.filter(isActive).length;
     const oltPorts = ports.filter(p => p.olt === olt);
     const portCount = oltPorts.length;
     const avgPerPort = portCount ? (total / portCount).toFixed(1) : 0;
@@ -71,8 +79,6 @@ export function processData(rows) {
   });
 
   return {
-    rows: normalized,
-    active,
     inactive,
     dupSerials,
     dupSubscribers,
@@ -80,9 +86,9 @@ export function processData(rows) {
     olts,
     summary: {
       total: normalized.length,
-      activeCount: active.length,
+      activeCount: normalized.length - inactive.length,
       inactiveCount: inactive.length,
-      activePct: normalized.length ? ((active.length / normalized.length) * 100).toFixed(1) : 0,
+      activePct: normalized.length ? (((normalized.length - inactive.length) / normalized.length) * 100).toFixed(1) : 0,
       dupSerial: dupSerials.length,
       dupSubscriber: dupSubscribers.length,
       oltCount: Object.keys(oltGroups).length,
