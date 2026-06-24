@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { HashRouter as BrowserRouter, Routes, Route } from 'react-router-dom';
 import Upload from './pages/Upload';
 import Dashboard from './pages/Dashboard';
 import OLTs from './pages/OLTs';
@@ -18,7 +18,7 @@ function WithLayout({ children }) {
 
 export default function App() {
   return (
-    <BrowserRouter basename="/gzh">
+    <BrowserRouter>
       <Routes>
         <Route path="/" element={<Upload />} />
         <Route path="/dashboard" element={<WithLayout><Dashboard /></WithLayout>} />
