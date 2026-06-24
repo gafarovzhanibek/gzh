@@ -1,0 +1,93 @@
+function groupBy(arr, key) {
+  return arr.reduce((acc, item) => {
+    const k = typeof key === 'function' ? key(item) : item[key];
+    if (!acc[k]) acc[k] = [];
+    acc[k].push(item);
+    return acc;
+  }, {});
+}
+
+export function normalizeRow(row) {
+  const normalized = {};
+  for (const [k, v] of Object.entries(row)) {
+    normalized[k.trim()] = v;
+  }
+  return normalized;
+}
+
+export const REQUIRED_COLS = ['Serial Number', 'Абонент', 'OLT', 'PON Port', 'Модель'];
+
+export function validateColumns(rows) {
+  if (!rows || rows.length === 0) return { valid: false, missing: REQUIRED_COLS };
+  const firstRow = normalizeRow(rows[0]);
+  const keys = Object.keys(firstRow);
+  const missing = REQUIRED_COLS.filter(col => !keys.includes(col));
+  return { valid: missing.length === 0, missing };
+}
+
+export function processData(rows) {
+  const normalized = rows.map(normalizeRow);
+
+  const active = normalized.filter(r => r['Модель'] && String(r['Модель']).trim() !== '');
+  const inactive = normalized.filter(r => !r['Модель'] || String(r['Модель']).trim() === '');
+
+  // duplicates by serial
+  const serialGroups = groupBy(normalized, 'Serial Number');
+  const dupSerials = Object.entries(serialGroups)
+    .filter(([k, v]) => k && String(k).trim() && v.length > 1)
+    .flatMap(([, v]) => v);
+
+  // duplicates by subscriber
+  const subGroups = groupBy(normalized, 'Абонент');
+  const dupSubscribers = Object.entries(subGroups)
+    .filter(([k, v]) => k && String(k).trim() && v.length > 1)
+    .flatMap(([, v]) => v);
+
+  // port stats
+  const portGroups = groupBy(normalized, r => `${r['OLT']}|||${r['PON Port']}`);
+  const ports = Object.entries(portGroups).map(([key, items]) => {
+    const [olt, port] = key.split('|||');
+    const total = items.length;
+    const activeCount = items.filter(r => r['Модель'] && String(r['Модель']).trim()).length;
+    const status = total > 64 ? 'overloaded' : total < 10 ? 'underloaded' : 'normal';
+    return { olt, port, total, active: activeCount, inactive: total - activeCount, status };
+  });
+
+  // OLT stats
+  const oltGroups = groupBy(normalized, 'OLT');
+  const olts = Object.entries(oltGroups).map(([olt, items]) => {
+    const total = items.length;
+    const activeCount = items.filter(r => r['Модель'] && String(r['Модель']).trim()).length;
+    const oltPorts = ports.filter(p => p.olt === olt);
+    const portCount = oltPorts.length;
+    const avgPerPort = portCount ? (total / portCount).toFixed(1) : 0;
+    const maxOnPort = oltPorts.length ? Math.max(...oltPorts.map(p => p.total)) : 0;
+    const dupCount = dupSerials.filter(r => r['OLT'] === olt).length;
+    return {
+      olt, total, active: activeCount, inactive: total - activeCount,
+      activePct: total ? ((activeCount / total) * 100).toFixed(1) : 0,
+      portCount, avgPerPort, maxOnPort, duplicates: dupCount
+    };
+  });
+
+  return {
+    rows: normalized,
+    active,
+    inactive,
+    dupSerials,
+    dupSubscribers,
+    ports,
+    olts,
+    summary: {
+      total: normalized.length,
+      activeCount: active.length,
+      inactiveCount: inactive.length,
+      activePct: normalized.length ? ((active.length / normalized.length) * 100).toFixed(1) : 0,
+      dupSerial: dupSerials.length,
+      dupSubscriber: dupSubscribers.length,
+      oltCount: Object.keys(oltGroups).length,
+      portCount: ports.length,
+      overloadedPorts: ports.filter(p => p.status === 'overloaded').length,
+    }
+  };
+}
