@@ -51,12 +51,18 @@ export function processData(rows) {
     .filter(([k, v]) => k && String(k).trim() && v.length > 1)
     .flatMap(([, v]) => v.map(slimRow));
 
-  // port stats
-  const portGroups = groupBy(normalized, r => `${r['OLT']}|||${r['PON Port']}`);
+  const hasPort = r => {
+    const p = String(r['PON Port'] ?? '').trim();
+    return p !== '' && p !== '/';
+  };
+
+  // port stats — exclude rows where PON Port is empty or "/"
+  const assignedRows = normalized.filter(hasPort);
+  const portGroups = groupBy(assignedRows, r => `${r['OLT']}|||${r['PON Port']}`);
   const ports = Object.entries(portGroups).map(([key, items]) => {
     const [olt, port] = key.split('|||');
     const total = items.length;
-    const activeCount = items.filter(r => r['Модель'] && String(r['Модель']).trim()).length;
+    const activeCount = items.filter(isActive).length;
     const status = total > 64 ? 'overloaded' : total < 10 ? 'underloaded' : 'normal';
     return { olt, port, total, active: activeCount, inactive: total - activeCount, status };
   });
@@ -68,7 +74,8 @@ export function processData(rows) {
     const activeCount = items.filter(isActive).length;
     const oltPorts = ports.filter(p => p.olt === olt);
     const portCount = oltPorts.length;
-    const avgPerPort = portCount ? (total / portCount).toFixed(1) : 0;
+    const assigned = items.filter(hasPort).length;
+    const avgPerPort = portCount ? (assigned / portCount).toFixed(1) : 0;
     const maxOnPort = oltPorts.length ? Math.max(...oltPorts.map(p => p.total)) : 0;
     const dupCount = dupSerials.filter(r => r['OLT'] === olt).length;
     return {
