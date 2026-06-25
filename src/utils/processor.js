@@ -51,10 +51,7 @@ export function processData(rows) {
     .filter(([k, v]) => k && String(k).trim() && v.length > 1)
     .flatMap(([, v]) => v.map(slimRow));
 
-  const hasPort = r => {
-    const p = String(r['PON Port'] ?? '').trim();
-    return p !== '' && p !== '/';
-  };
+  const hasPort = r => /\d/.test(String(r['PON Port'] ?? ''));
 
   // port stats — exclude rows where PON Port is empty or "/"
   const assignedRows = normalized.filter(hasPort);
