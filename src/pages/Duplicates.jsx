@@ -9,15 +9,21 @@ const COLS = [
   { header: 'OLT', key: 'OLT' },
   { header: 'PON Port', key: 'PON Port' },
   { header: 'Модель', key: 'Модель' },
+  { header: 'Статус', key: '_status' },
 ];
 
 function DupTable({ rows, filename }) {
+  const rowsWithStatus = rows.map(r => ({
+    ...r,
+    _status: (!r['Модель'] || String(r['Модель']).trim() === '') ? 'Inactive' : 'Active',
+  }));
+
   return (
     <div>
       <div className="flex justify-between items-center mb-3">
         <span className="text-sm text-gray-500">{rows.length} records</span>
         <button
-          onClick={() => exportToExcel(rows, COLS, filename)}
+          onClick={() => exportToExcel(rowsWithStatus, COLS, filename)}
           className="px-3 py-1.5 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700"
         >
           Export Excel
