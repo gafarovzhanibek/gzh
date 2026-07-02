@@ -57,6 +57,15 @@ export default function Upload() {
     accept: {
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
       'application/vnd.ms-excel': ['.xls'],
+      'application/octet-stream': ['.xlsx', '.xls'],
+      'application/zip': ['.xlsx'],
+    },
+    validator: (file) => {
+      const name = file.name.toLowerCase();
+      if (!name.endsWith('.xlsx') && !name.endsWith('.xls')) {
+        return { code: 'wrong-type', message: 'Only .xlsx and .xls files are supported' };
+      }
+      return null;
     },
     multiple: false,
     disabled: status === 'parsing',
