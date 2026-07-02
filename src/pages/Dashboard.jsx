@@ -67,11 +67,6 @@ export default function Dashboard() {
           color="red"
         />
         <MetricCard
-          label="ONT Id Duplicates"
-          value={summary.dupOntId.toLocaleString()}
-          color={summary.dupOntId > 0 ? 'yellow' : 'gray'}
-        />
-        <MetricCard
           label="Serial Duplicates"
           value={summary.dupSerial.toLocaleString()}
           color={summary.dupSerial > 0 ? 'yellow' : 'gray'}

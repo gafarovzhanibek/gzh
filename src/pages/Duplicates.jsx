@@ -61,16 +61,14 @@ export default function Duplicates() {
   const [tab, setTab] = useState('serial');
 
   const tabs = [
-    { id: 'ontid', label: `ONT Id (${data.dupOntIds.length})` },
     { id: 'serial', label: `Serial Number (${data.dupSerials.length})` },
     { id: 'subscriber', label: `Абонент (${data.dupSubscribers.length})` },
-    { id: 'all', label: `Все (${data.dupOntIds.length + data.dupSerials.length + data.dupSubscribers.length})` },
+    { id: 'all', label: `Все (${data.dupSerials.length + data.dupSubscribers.length})` },
   ];
 
-  const rows = tab === 'ontid' ? data.dupOntIds
-    : tab === 'serial' ? data.dupSerials
+  const rows = tab === 'serial' ? data.dupSerials
     : tab === 'subscriber' ? data.dupSubscribers
-    : [...data.dupOntIds, ...data.dupSerials, ...data.dupSubscribers];
+    : [...data.dupSerials, ...data.dupSubscribers];
 
   return (
     <div className="space-y-4">

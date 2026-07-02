@@ -39,12 +39,6 @@ export function processData(rows) {
   const isActive = r => r['Модель'] && String(r['Модель']).trim() !== '';
   const inactive = normalized.filter(r => !isActive(r)).map(slimRow);
 
-  // duplicates by ONT Id
-  const ontIdGroups = groupBy(normalized, 'ONT Id');
-  const dupOntIds = Object.entries(ontIdGroups)
-    .filter(([k, v]) => k && String(k).trim() && v.length > 1)
-    .flatMap(([, v]) => v.map(slimRow));
-
   // duplicates by serial
   const serialGroups = groupBy(normalized, 'Serial Number');
   const dupSerials = Object.entries(serialGroups)
@@ -90,7 +84,6 @@ export function processData(rows) {
 
   return {
     inactive,
-    dupOntIds,
     dupSerials,
     dupSubscribers,
     ports,
@@ -100,7 +93,6 @@ export function processData(rows) {
       activeCount: normalized.length - inactive.length,
       inactiveCount: inactive.length,
       activePct: normalized.length ? (((normalized.length - inactive.length) / normalized.length) * 100).toFixed(1) : 0,
-      dupOntId: dupOntIds.length,
       dupSerial: dupSerials.length,
       dupSubscriber: dupSubscribers.length,
       oltCount: Object.keys(oltGroups).length,
