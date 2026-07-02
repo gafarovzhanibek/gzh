@@ -3,6 +3,7 @@ import { loadData } from '../utils/storage';
 import { exportToExcel } from '../utils/exporter';
 
 const COLS = [
+  { header: 'ONT Id', key: 'ONT Id' },
   { header: 'Serial Number', key: 'Serial Number' },
   { header: 'Абонент', key: 'Абонент' },
   { header: 'OLT', key: 'OLT' },

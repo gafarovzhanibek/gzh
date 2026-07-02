@@ -15,7 +15,7 @@ export function normalizeRow(row) {
   return normalized;
 }
 
-export const REQUIRED_COLS = ['Serial Number', 'Абонент', 'OLT', 'PON Port', 'Модель'];
+export const REQUIRED_COLS = ['ONT Id', 'Serial Number', 'Абонент', 'OLT', 'PON Port', 'Модель'];
 
 export function validateColumns(rows) {
   if (!rows || rows.length === 0) return { valid: false, missing: REQUIRED_COLS };
@@ -25,7 +25,7 @@ export function validateColumns(rows) {
   return { valid: missing.length === 0, missing };
 }
 
-const KEEP_COLS = ['Serial Number', 'Абонент', 'OLT', 'PON Port', 'Модель'];
+const KEEP_COLS = ['ONT Id', 'Serial Number', 'Абонент', 'OLT', 'PON Port', 'Модель'];
 
 function slimRow(row) {
   const out = {};
@@ -38,6 +38,12 @@ export function processData(rows) {
 
   const isActive = r => r['Модель'] && String(r['Модель']).trim() !== '';
   const inactive = normalized.filter(r => !isActive(r)).map(slimRow);
+
+  // duplicates by ONT Id
+  const ontIdGroups = groupBy(normalized, 'ONT Id');
+  const dupOntIds = Object.entries(ontIdGroups)
+    .filter(([k, v]) => k && String(k).trim() && v.length > 1)
+    .flatMap(([, v]) => v.map(slimRow));
 
   // duplicates by serial
   const serialGroups = groupBy(normalized, 'Serial Number');
@@ -84,6 +90,7 @@ export function processData(rows) {
 
   return {
     inactive,
+    dupOntIds,
     dupSerials,
     dupSubscribers,
     ports,
@@ -93,6 +100,7 @@ export function processData(rows) {
       activeCount: normalized.length - inactive.length,
       inactiveCount: inactive.length,
       activePct: normalized.length ? (((normalized.length - inactive.length) / normalized.length) * 100).toFixed(1) : 0,
+      dupOntId: dupOntIds.length,
       dupSerial: dupSerials.length,
       dupSubscriber: dupSubscribers.length,
       oltCount: Object.keys(oltGroups).length,

@@ -3,6 +3,7 @@ import { loadData } from '../utils/storage';
 import { exportToExcel } from '../utils/exporter';
 
 const COLS = [
+  { header: 'ONT Id', key: 'ONT Id' },
   { header: 'Serial Number', key: 'Serial Number' },
   { header: 'Абонент', key: 'Абонент' },
   { header: 'OLT', key: 'OLT' },
@@ -60,14 +61,16 @@ export default function Duplicates() {
   const [tab, setTab] = useState('serial');
 
   const tabs = [
-    { id: 'serial', label: `Serial Duplicates (${data.dupSerials.length})` },
-    { id: 'subscriber', label: `Subscriber Duplicates (${data.dupSubscribers.length})` },
-    { id: 'all', label: `All (${data.dupSerials.length + data.dupSubscribers.length})` },
+    { id: 'ontid', label: `ONT Id (${data.dupOntIds.length})` },
+    { id: 'serial', label: `Serial Number (${data.dupSerials.length})` },
+    { id: 'subscriber', label: `Абонент (${data.dupSubscribers.length})` },
+    { id: 'all', label: `Все (${data.dupOntIds.length + data.dupSerials.length + data.dupSubscribers.length})` },
   ];
 
-  const rows = tab === 'serial' ? data.dupSerials
+  const rows = tab === 'ontid' ? data.dupOntIds
+    : tab === 'serial' ? data.dupSerials
     : tab === 'subscriber' ? data.dupSubscribers
-    : [...data.dupSerials, ...data.dupSubscribers];
+    : [...data.dupOntIds, ...data.dupSerials, ...data.dupSubscribers];
 
   return (
     <div className="space-y-4">
